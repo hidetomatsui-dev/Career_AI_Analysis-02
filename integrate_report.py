@@ -55,7 +55,7 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--max-tokens", type=int, default=16000,
                    help="応答の最大トークン数（既定: 16000）")
     p.add_argument("--system-prompt", type=Path,
-                   help="システムプロンプトの差し替えファイル（既定: prompts/integration_system.md）")
+                   help="システムプロンプトの差し替えファイル（既定: career_integrator/integration_system.md）")
     p.add_argument("--dry-run", action="store_true",
                    help="API を呼ばず、抽出サマリと組み立てたプロンプトを表示して終了")
     return p

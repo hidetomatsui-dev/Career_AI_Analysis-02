@@ -7,7 +7,7 @@ from typing import Optional, Union
 
 from .parsers import InterestValuesReport, TenmeiReport
 
-_PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "integration_system.md"
+_PROMPT_PATH = Path(__file__).resolve().parent / "integration_system.md"
 
 
 def load_system_prompt(path: Optional[Union[str, Path]] = None) -> str:

@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>職業興味×価値観 × 四柱推命 統合レポート</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --border: #e2e2dd; --text: #1c1c1a;
+    --muted: #6b6b63; --accent: #6b4de6; --accent-ink: #ffffff; --err: #c0392b;
+    --code-bg: #f0f0ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17171a; --panel: #1f1f23; --border: #33333a; --text: #e9e9e6;
+      --muted: #9a9a92; --accent: #9b86ff; --accent-ink: #17171a; --err: #ff8a7a;
+      --code-bg: #26262b;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic UI",
+      "Noto Sans JP", sans-serif; line-height: 1.7;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 1.4rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 28px; font-size: .92rem; }
+  .field { margin-bottom: 20px; }
+  label { display: block; font-weight: 600; margin-bottom: 6px; font-size: .95rem; }
+  .hint { color: var(--muted); font-weight: 400; font-size: .82rem; }
+  textarea, input[type=text] {
+    width: 100%; background: var(--panel); color: var(--text);
+    border: 1px solid var(--border); border-radius: 10px; padding: 12px;
+    font: inherit; font-size: .9rem; resize: vertical;
+  }
+  textarea { min-height: 190px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .row { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+  .row > .field { flex: 1 1 220px; margin-bottom: 0; }
+  .controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 24px 0; }
+  button {
+    background: var(--accent); color: var(--accent-ink); border: 0;
+    border-radius: 10px; padding: 11px 20px; font: inherit; font-weight: 700;
+    cursor: pointer;
+  }
+  button.ghost { background: transparent; color: var(--accent); border: 1px solid var(--border); font-weight: 600; }
+  button:disabled { opacity: .55; cursor: progress; }
+  select { background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px; font: inherit; }
+  .status { color: var(--muted); font-size: .9rem; min-height: 1.4em; }
+  .status.err { color: var(--err); }
+  #out {
+    margin-top: 20px; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 8px 26px 26px; display: none;
+  }
+  #out.show { display: block; }
+  #out h1 { font-size: 1.35rem; margin-top: 24px; }
+  #out h2 { font-size: 1.08rem; margin-top: 26px; border-top: 1px solid var(--border); padding-top: 18px; }
+  #out ul, #out ol { padding-left: 1.3em; }
+  #out li { margin: 4px 0; }
+  #out p { margin: 10px 0; }
+  #out strong { font-weight: 700; }
+  .outbar { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+  footer { margin-top: 40px; color: var(--muted); font-size: .8rem; }
+  code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>職業興味×価値観 × 四柱推命 統合レポート</h1>
+  <p class="sub">2 つの自己理解レポートを貼り付けると、統合した「キャリア統合分析レポート」を生成します。</p>
+
+  <div class="field">
+    <label for="interest">① 職業興味×価値観レポート <span class="hint">（提出用ワークシート全文）</span></label>
+    <textarea id="interest" placeholder="════ 職業興味×価値観ワークショップ 提出用ワークシート ════ …"></textarea>
+  </div>
+
+  <div class="field">
+    <label for="tenmei">② 四柱推命 天命レポート <span class="hint">（お仕事占いの出力全文）</span></label>
+    <textarea id="tenmei" placeholder="━━━ お仕事占い ─ 四柱推命 天命レポート ━━━ …"></textarea>
+  </div>
+
+  <div class="row">
+    <div class="field">
+      <label for="name">宛名 <span class="hint">（任意・空欄なら自動）</span></label>
+      <input type="text" id="name" placeholder="例: ひでと" />
+    </div>
+    <div class="field">
+      <label for="mode">生成モード</label>
+      <select id="mode">
+        <option value="fast">はやい（Sonnet・目安 20〜40 秒）</option>
+        <option value="deep">じっくり（Opus・高精度／60 秒超で失敗することあり）</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="run">統合レポートを生成</button>
+    <button id="sample" class="ghost" type="button">サンプルを挿入</button>
+    <button id="clear" class="ghost" type="button">クリア</button>
+  </div>
+  <div class="status" id="status"></div>
+
+  <div id="out"></div>
+  <div class="outbar" id="outbar" style="display:none">
+    <button id="copy" class="ghost" type="button">Markdown をコピー</button>
+    <button id="download" class="ghost" type="button">.md で保存</button>
+  </div>
+
+  <footer>
+    生成には Anthropic Claude を使用します。入力内容はレポート生成のためだけにサーバ経由で送信されます。
+  </footer>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let lastMarkdown = "";
+
+function renderMarkdown(md) {
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const inline = (s) => esc(s)
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/`(.+?)`/g, "<code>$1</code>");
+  const lines = md.replace(/\r\n/g, "\n").split("\n");
+  let html = "", list = null;
+  const closeList = () => { if (list) { html += `</${list}>`; list = null; } };
+  for (let raw of lines) {
+    const line = raw.replace(/\s+$/, "");
+    let m;
+    if (/^#\s+/.test(line)) { closeList(); html += `<h1>${inline(line.replace(/^#\s+/, ""))}</h1>`; }
+    else if (/^#{2,}\s+/.test(line) || /^■\s*/.test(line)) {
+      closeList(); html += `<h2>${inline(line.replace(/^#{2,}\s+/, "").replace(/^■\s*/, ""))}</h2>`;
+    }
+    else if ((m = line.match(/^\s*[-*]\s+(.*)$/))) {
+      if (list !== "ul") { closeList(); html += "<ul>"; list = "ul"; }
+      html += `<li>${inline(m[1])}</li>`;
+    }
+    else if ((m = line.match(/^\s*\d+[.)]\s+(.*)$/))) {
+      if (list !== "ol") { closeList(); html += "<ol>"; list = "ol"; }
+      html += `<li>${inline(m[1])}</li>`;
+    }
+    else if (line.trim() === "") { closeList(); }
+    else { closeList(); html += `<p>${inline(line)}</p>`; }
+  }
+  closeList();
+  return html;
+}
+
+async function loadSample() {
+  setStatus("サンプルを読み込み中…");
+  try {
+    const [a, b] = await Promise.all([
+      fetch("/samples/interest_values_report.txt").then(r => r.text()),
+      fetch("/samples/tenmei_report.txt").then(r => r.text()),
+    ]);
+    $("interest").value = a.trim();
+    $("tenmei").value = b.trim();
+    setStatus("サンプルを挿入しました。");
+  } catch (e) {
+    setStatus("サンプルの読み込みに失敗しました。", true);
+  }
+}
+
+function setStatus(msg, isErr) {
+  const el = $("status");
+  el.textContent = msg;
+  el.classList.toggle("err", !!isErr);
+}
+
+async function run() {
+  const interest = $("interest").value.trim();
+  const tenmei = $("tenmei").value.trim();
+  if (!interest || !tenmei) { setStatus("① と ② の両方を入力してください。", true); return; }
+
+  $("run").disabled = true;
+  $("out").classList.remove("show");
+  $("outbar").style.display = "none";
+  const mode = $("mode").value;
+  setStatus(mode === "deep"
+    ? "じっくり生成中…（最大 1 分ほどかかります）"
+    : "生成中…（20〜40 秒ほどお待ちください）");
+
+  try {
+    const res = await fetch("/api/integrate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ interest, tenmei, mode, name: $("name").value.trim() }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `サーバエラー (${res.status})`);
+
+    lastMarkdown = data.report || "";
+    $("out").innerHTML = renderMarkdown(lastMarkdown);
+    $("out").classList.add("show");
+    $("outbar").style.display = "flex";
+    setStatus("完成しました。");
+    $("out").scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (e) {
+    setStatus(e.message || "生成に失敗しました。", true);
+  } finally {
+    $("run").disabled = false;
+  }
+}
+
+$("run").addEventListener("click", run);
+$("sample").addEventListener("click", loadSample);
+$("clear").addEventListener("click", () => {
+  $("interest").value = ""; $("tenmei").value = ""; $("name").value = "";
+  $("out").classList.remove("show"); $("outbar").style.display = "none"; setStatus("");
+});
+$("copy").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText(lastMarkdown); setStatus("コピーしました。"); }
+  catch { setStatus("コピーに失敗しました。", true); }
+});
+$("download").addEventListener("click", () => {
+  const blob = new Blob([lastMarkdown], { type: "text/markdown;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "career_integrated_report.md";
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+</script>
+</body>
+</html>

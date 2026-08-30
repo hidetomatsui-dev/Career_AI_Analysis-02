@@ -10,6 +10,9 @@ env/
 out/
 *.md.out
 
+# Vercel
+.vercel/
+
 # OS / エディタ
 .DS_Store
 .idea/
