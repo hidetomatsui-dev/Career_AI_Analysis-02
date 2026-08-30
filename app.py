@@ -18,6 +18,8 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(_ROOT))
 
+import os
+
 from career_integrator.client import LLMError, resolve_api_key
 from career_integrator.service import run_integration
 
@@ -96,9 +98,30 @@ def _handle_integrate(environ, start_response):
     return _json_response(start_response, "200 OK", {"report": report})
 
 
+def _handle_health(start_response):
+    """Vercel が実際に読めているキーの状態を返す（値そのものは出さない）。"""
+    present = {name: bool((os.environ.get(name) or "").strip()) for name in ("GEMINI_API_KEY", "GOOGLE_API_KEY")}
+    key = resolve_api_key()
+    info = {
+        "ok": bool(key),
+        "env_present": present,
+        "key_source": next((n for n in ("GEMINI_API_KEY", "GOOGLE_API_KEY") if present.get(n)), None),
+    }
+    if key:
+        info["key_length"] = len(key)
+        info["key_prefix"] = key[:4]
+        info["key_suffix"] = key[-4:]
+        info["looks_like_gemini_key"] = key.startswith("AIza") and len(key) >= 35
+    start_response("200 OK", [("Content-Type", "application/json; charset=utf-8")])
+    return [json.dumps(info, ensure_ascii=False).encode("utf-8")]
+
+
 def app(environ, start_response):
     path = environ.get("PATH_INFO", "/") or "/"
     method = environ.get("REQUEST_METHOD", "GET")
+
+    if path == "/api/health":
+        return _handle_health(start_response)
 
     if path == "/api/integrate":
         return _handle_integrate(environ, start_response)

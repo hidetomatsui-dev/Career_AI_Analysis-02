@@ -92,6 +92,19 @@ class ApiRoutingTest(unittest.TestCase):
         status, _, _ = wsgi_call("POST", "/api/integrate", b"not json{")
         self.assertTrue(status.startswith("400"))
 
+    def test_health_reports_key_shape_without_leaking_value(self):
+        os.environ.pop("GOOGLE_API_KEY", None)
+        os.environ["GEMINI_API_KEY"] = "  AIzaSy" + "x" * 33 + "ab \n"
+        import json as _json
+        status, headers, out = wsgi_call("GET", "/api/health")
+        self.assertTrue(status.startswith("200"))
+        data = _json.loads(out)
+        self.assertTrue(data["ok"])
+        self.assertEqual(data["key_source"], "GEMINI_API_KEY")
+        self.assertEqual(data["key_length"], 41)          # 前後の空白/改行は除去済み
+        self.assertEqual(data["key_suffix"], "xxab")
+        self.assertNotIn("AIzaSy" + "x" * 33 + "ab", out.decode("utf-8"))  # 値そのものは出さない
+
 
 class ServiceValidationTest(unittest.TestCase):
     def test_requires_both_reports(self):
