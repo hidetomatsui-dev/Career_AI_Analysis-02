@@ -11,8 +11,8 @@
 ```
 career_integrator/                    … 統合ロジック（CLI と Web で共有）
   ├─ parsers.py             … 2つのレポート原文から構造化サマリを抽出（氏名・RIASEC集計・価値観TOP3・天命タイプ など）
-  ├─ prompt.py              … integration_system.md ＋ 抽出サマリ ＋ 原文全文 で Claude へのリクエストを組み立て
-  ├─ client.py              … Claude (Anthropic Messages API) を呼び出し、統合レポート本文を取得
+  ├─ prompt.py              … integration_system.md ＋ 抽出サマリ ＋ 原文全文 でリクエストを組み立て
+  ├─ client.py              … Google Gemini API (google-genai) を呼び出し、統合レポート本文を取得
   └─ integration_system.md  … 統合ロジック本体（セクション構成・トーン・禁止事項）。ここを編集すれば出力が変わる
 integrate_report.py                   … CLI エントリポイント
 api/integrate.py                      … Vercel Serverless Function（POST /api/integrate）
@@ -28,10 +28,10 @@ vercel.json                           … 関数設定（maxDuration 60s ほか�
 cd "職業興味×価値観×四柱推命"
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-export ANTHROPIC_API_KEY=sk-ant-...        # または `ant auth login`
+export GEMINI_API_KEY=...        # Google AI Studio で取得（GOOGLE_API_KEY でも可）
 ```
 
-> Python 3.10 以上を推奨（`anthropic` 1.x の要件）。
+> Python 3.9 以上。LLM は Google Gemini（`google-genai`）を使用します。
 
 ## 使い方
 
@@ -57,9 +57,10 @@ python integrate_report.py -i samples/interest_values_report.txt -t samples/tenm
 | `-t, --tenmei` | （必須） | 四柱推命 天命レポートのテキストファイル |
 | `-o, --output` | 標準出力 | 出力 Markdown ファイル |
 | `--name` | 天命→興味の順に氏名採用 | レポートの宛名（「〇〇様」の〇〇） |
-| `--model` | `claude-opus-5` | 使用する Claude モデル。コスト優先なら `claude-sonnet-5` |
-| `--effort` | `high` | 推論の effort（`low`〜`max`） |
-| `--max-tokens` | `16000` | 応答の最大トークン数 |
+| `--model` | `gemini-2.5-pro` | 使用する Gemini モデル。速度優先なら `gemini-2.5-flash` |
+| `--temperature` | `0.7` | 生成の temperature |
+| `--max-output-tokens` | `24000` | 応答の最大トークン数（思考トークン込み） |
+| `--thinking-budget` | （モデル既定） | 思考トークン上限。`0` で思考オフ（`flash` 系のみ） |
 | `--system-prompt` | `career_integrator/integration_system.md` | システムプロンプトの差し替え |
 | `--dry-run` | off | API を呼ばずプロンプトを表示 |
 
@@ -91,7 +92,7 @@ Vercel の Project → Settings → Environment Variables に追加（Production
 
 | Name | Value |
 |---|---|
-| `ANTHROPIC_API_KEY` | `sk-ant-...` |
+| `GEMINI_API_KEY` | Google AI Studio で取得した API キー（`GOOGLE_API_KEY` でも可） |
 
 設定後、再デプロイすると反映されます。
 
@@ -99,10 +100,10 @@ Vercel の Project → Settings → Environment Variables に追加（Production
 
 - `/` … 入力フォーム（`public/index.html`）。「サンプルを挿入」で `samples/` の例が入ります。
 - `POST /api/integrate` … `{ interest, tenmei, name?, mode? }` を受け取り `{ report }` を返す。
-  - `mode: "fast"`（既定）… `claude-sonnet-5` / effort=low。目安 20〜40 秒。
-  - `mode: "deep"` … `claude-opus-5` / effort=high。高精度だが Hobby プランの 60 秒上限で失敗することあり（その場合は Pro で `maxDuration` を延長）。
+  - `mode: "fast"`（既定）… `gemini-2.5-flash`。目安 15〜35 秒。
+  - `mode: "deep"` … `gemini-2.5-pro`。高精度だが Hobby プランの 60 秒上限で失敗することあり（その場合は Pro で `maxDuration` を延長）。
 
-> ローカル確認: `npx vercel dev`（`ANTHROPIC_API_KEY` を `.env` か環境変数で渡す）。
+> ローカル確認: `npx vercel dev`（`GEMINI_API_KEY` を `.env` か環境変数で渡す）。
 
 ## テスト
 

@@ -1,2 +1,2 @@
-# Python 3.10 以上を推奨（anthropic 1.x の要件）
-anthropic>=0.69
+# Python 3.9 以上
+google-genai>=1.0

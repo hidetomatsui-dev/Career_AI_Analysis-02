@@ -6,12 +6,14 @@
     "tenmei":   "<四柱推命 天命レポート全文>",       # 必須
     "name":     "山田",                              # 任意（宛名の上書き）
     "mode":     "fast" | "deep",                     # 任意（既定 fast）
-    "model":    "claude-sonnet-5"                    # 任意（許可リスト内のみ、mode より優先）
+    "model":    "gemini-2.5-flash"                   # 任意（許可リスト内のみ、mode より優先）
   }
 
 レスポンス JSON:
   200 -> {"report": "<統合レポート Markdown>"}
   4xx/5xx -> {"error": "<メッセージ>"}
+
+必要な環境変数: GEMINI_API_KEY（または GOOGLE_API_KEY）
 """
 
 from __future__ import annotations
@@ -23,7 +25,7 @@ from http.server import BaseHTTPRequestHandler
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from career_integrator.client import ClaudeError, call_claude
+from career_integrator.client import LLMError, call_llm, resolve_api_key
 from career_integrator.parsers import (
     parse_interest_values_report,
     parse_tenmei_report,
@@ -34,13 +36,14 @@ from career_integrator.prompt import (
     resolve_name,
 )
 
-_ALLOWED_MODELS = {"claude-sonnet-5", "claude-opus-5", "claude-haiku-4-5"}
+_ALLOWED_MODELS = {"gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite"}
 _MAX_CHARS = 60_000
 
 # Vercel Hobby の実行上限は 60 秒。既定は速い構成にし、"deep" で高精度に切り替える。
+# (model, max_output_tokens, thinking_budget)  thinking_budget=None はモデル既定（動的思考）
 _MODES = {
-    "fast": ("claude-sonnet-5", "low", 8000),
-    "deep": ("claude-opus-5", "high", 12000),
+    "fast": ("gemini-2.5-flash", 12000, None),
+    "deep": ("gemini-2.5-pro", 24000, None),
 }
 
 
@@ -52,7 +55,9 @@ def integrate(payload: dict) -> str:
     if len(interest_text) > _MAX_CHARS or len(tenmei_text) > _MAX_CHARS:
         raise ValueError(f"入力が長すぎます（各 {_MAX_CHARS:,} 文字まで）。")
 
-    model, effort, max_tokens = _MODES.get(payload.get("mode", "fast"), _MODES["fast"])
+    model, max_output_tokens, thinking_budget = _MODES.get(
+        payload.get("mode", "fast"), _MODES["fast"]
+    )
     if payload.get("model") in _ALLOWED_MODELS:
         model = payload["model"]
 
@@ -60,12 +65,12 @@ def integrate(payload: dict) -> str:
     tenmei = parse_tenmei_report(tenmei_text)
     name = resolve_name(iv, tenmei, (payload.get("name") or "").strip() or None)
 
-    return call_claude(
+    return call_llm(
         load_system_prompt(),
         build_user_message(iv, tenmei, name=name),
         model=model,
-        max_tokens=max_tokens,
-        effort=effort,
+        max_output_tokens=max_output_tokens,
+        thinking_budget=thinking_budget,
     )
 
 
@@ -98,17 +103,17 @@ class handler(BaseHTTPRequestHandler):
         except (ValueError, json.JSONDecodeError):
             return self._json(400, {"error": "リクエスト形式が不正です（JSON body が必要です）。"})
 
-        if not os.environ.get("ANTHROPIC_API_KEY"):
+        if not resolve_api_key():
             return self._json(
                 500,
-                {"error": "サーバに ANTHROPIC_API_KEY が設定されていません。Vercel の環境変数を確認してください。"},
+                {"error": "サーバに GEMINI_API_KEY が設定されていません。Vercel の環境変数を確認してください。"},
             )
 
         try:
             report = integrate(payload)
         except ValueError as e:
             return self._json(400, {"error": str(e)})
-        except ClaudeError as e:
+        except LLMError as e:
             return self._json(502, {"error": str(e)})
         except Exception as e:  # noqa: BLE001
             return self._json(500, {"error": f"想定外のエラー: {e}"})

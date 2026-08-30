@@ -2,7 +2,7 @@
 """職業興味×価値観レポート × 四柱推命 天命レポート → キャリア統合分析レポート。
 
 使用例:
-    export ANTHROPIC_API_KEY=sk-ant-...
+    export GEMINI_API_KEY=...        # または GOOGLE_API_KEY
     python integrate_report.py \\
         -i samples/interest_values_report.txt \\
         -t samples/tenmei_report.txt \\
@@ -20,7 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from career_integrator.client import DEFAULT_MODEL, ClaudeError, call_claude
+from career_integrator.client import DEFAULT_MODEL, LLMError, call_llm
 from career_integrator.parsers import (
     parse_interest_values_report,
     parse_tenmei_report,
@@ -48,12 +48,13 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--name",
                    help="宛名（省略時: 天命レポート → ワークシート の順に氏名を採用）")
     p.add_argument("--model", default=DEFAULT_MODEL,
-                   help=f"使用する Claude モデル（既定: {DEFAULT_MODEL}）")
-    p.add_argument("--effort", default="high",
-                   choices=["low", "medium", "high", "xhigh", "max"],
-                   help="推論の effort（既定: high）")
-    p.add_argument("--max-tokens", type=int, default=16000,
-                   help="応答の最大トークン数（既定: 16000）")
+                   help=f"使用する Gemini モデル（既定: {DEFAULT_MODEL}／速度優先なら gemini-2.5-flash）")
+    p.add_argument("--temperature", type=float, default=0.7,
+                   help="生成の temperature（既定: 0.7）")
+    p.add_argument("--max-output-tokens", type=int, default=24000,
+                   help="応答の最大トークン数（思考トークン込み。既定: 24000）")
+    p.add_argument("--thinking-budget", type=int, default=None,
+                   help="思考トークン上限。0 で思考オフ（flash 系のみ）。省略時はモデル既定")
     p.add_argument("--system-prompt", type=Path,
                    help="システムプロンプトの差し替えファイル（既定: career_integrator/integration_system.md）")
     p.add_argument("--dry-run", action="store_true",
@@ -83,7 +84,8 @@ def main(argv=None) -> int:
 
     if args.dry_run:
         print(f"# 宛名: {name}様\n")
-        print(f"# モデル: {args.model} / effort={args.effort} / max_tokens={args.max_tokens}\n")
+        print(f"# モデル: {args.model} / temperature={args.temperature} / "
+              f"max_output_tokens={args.max_output_tokens} / thinking_budget={args.thinking_budget}\n")
         print("=" * 60)
         print("SYSTEM PROMPT")
         print("=" * 60)
@@ -95,14 +97,15 @@ def main(argv=None) -> int:
         return 0
 
     try:
-        report = call_claude(
+        report = call_llm(
             system_prompt,
             user_message,
             model=args.model,
-            max_tokens=args.max_tokens,
-            effort=args.effort,
+            temperature=args.temperature,
+            max_output_tokens=args.max_output_tokens,
+            thinking_budget=args.thinking_budget,
         )
-    except ClaudeError as e:
+    except LLMError as e:
         print(f"エラー: {e}", file=sys.stderr)
         return 1
 
