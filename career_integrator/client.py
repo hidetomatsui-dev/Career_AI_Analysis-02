@@ -17,12 +17,13 @@ class LLMError(RuntimeError):
 
 
 def resolve_api_key(explicit: Optional[str] = None) -> Optional[str]:
+    # 環境変数にコピペで紛れ込みがちな前後の空白・引用符・改行を除去する
     if explicit:
-        return explicit
+        return explicit.strip().strip("\"'") or None
     for name in _KEY_ENVS:
         v = os.environ.get(name)
-        if v:
-            return v
+        if v and v.strip().strip("\"'"):
+            return v.strip().strip("\"'")
     return None
 
 
