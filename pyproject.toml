@@ -1,0 +1,13 @@
+[project]
+name = "career-ai-analysis"
+version = "0.1.0"
+description = "職業興味×価値観 × 四柱推命 統合レポート生成"
+requires-python = ">=3.9"
+dependencies = [
+    "google-genai>=1.0",
+]
+
+# Vercel の Python エントリポイント（WSGI アプリ）。
+# app.py の `app` 変数がすべてのリクエストを処理する。
+[tool.vercel]
+entrypoint = "app:app"

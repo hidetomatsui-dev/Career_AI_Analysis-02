@@ -13,11 +13,13 @@ career_integrator/                    … 統合ロジック（CLI と Web で�
   ├─ parsers.py             … 2つのレポート原文から構造化サマリを抽出（氏名・RIASEC集計・価値観TOP3・天命タイプ など）
   ├─ prompt.py              … integration_system.md ＋ 抽出サマリ ＋ 原文全文 でリクエストを組み立て
   ├─ client.py              … Google Gemini API (google-genai) を呼び出し、統合レポート本文を取得
+  ├─ service.py             … 入力検証・モード選択・LLM呼び出し（Web から使う共通処理）
   └─ integration_system.md  … 統合ロジック本体（セクション構成・トーン・禁止事項）。ここを編集すれば出力が変わる
 integrate_report.py                   … CLI エントリポイント
-api/integrate.py                      … Vercel Serverless Function（POST /api/integrate）
+app.py                                … Web エントリポイント（WSGI）。静的配信 ＋ POST /api/integrate
 public/index.html                     … Web フロントエンド（2レポートを貼り付け→統合レポート表示）
-vercel.json                           … 関数設定（maxDuration 60s ほか）
+pyproject.toml                        … 依存とVercelエントリポイント（[tool.vercel] entrypoint = "app:app"）
+vercel.json                           … maxDuration 60s / バンドル除外
 ```
 
 原文は**全文をそのままモデルに渡す**（切り詰めない）。パーサは宛名決定と抽出サマリ提示のための補助で、項目が取れなくても処理は止まりません。
@@ -75,11 +77,13 @@ python integrate_report.py -i samples/interest_values_report.txt -t samples/tenm
 
 ## Web でデプロイ（Vercel）
 
-`public/`（静的フロント）＋ `api/integrate.py`（Python Serverless Function）で構成しています。フレームワークは不要（Other プリセット）。
+Vercel の **Python ランタイム**（WSGI エントリポイント）で動きます。`app.py` の `app` が全リクエストを処理し、
+`/` と `/samples/*` は `public/` の静的ファイル、`POST /api/integrate` が統合 API です。
+エントリポイントは `pyproject.toml` の `[tool.vercel] entrypoint = "app:app"` で明示しています。
 
 ### 1. プロジェクトを接続
 
-- **ダッシュボード**: [vercel.com/new](https://vercel.com/new) で GitHub リポジトリ `hidetomatsui-dev/Career_AI_Analysis-02` を Import。Framework Preset は **Other**、Root Directory は既定のまま。
+- **ダッシュボード**: [vercel.com/new](https://vercel.com/new) で GitHub リポジトリ `hidetomatsui-dev/Career_AI_Analysis-02` を Import。Root Directory は既定のまま（Framework Preset は自動判定で可）。
 - **CLI**: リポジトリ直下で
   ```bash
   npx vercel        # 初回：プロジェクト作成＋プレビューデプロイ
@@ -94,16 +98,18 @@ Vercel の Project → Settings → Environment Variables に追加（Production
 |---|---|
 | `GEMINI_API_KEY` | Google AI Studio で取得した API キー（`GOOGLE_API_KEY` でも可） |
 
-設定後、再デプロイすると反映されます。
+設定後、Deployments から Redeploy すると反映されます。
 
 ### 3. 動作
 
-- `/` … 入力フォーム（`public/index.html`）。「サンプルを挿入」で `samples/` の例が入ります。
-- `POST /api/integrate` … `{ interest, tenmei, name?, mode? }` を受け取り `{ report }` を返す。
+- `/` … 入力フォーム（`public/index.html`）。「サンプルを挿入」で `public/samples/` の例が入ります。
+- `POST /api/integrate` … `{ interest, tenmei, name?, mode?, model? }` を受け取り `{ report }` を返す。
   - `mode: "fast"`（既定）… `gemini-2.5-flash`。目安 15〜35 秒。
-  - `mode: "deep"` … `gemini-2.5-pro`。高精度だが Hobby プランの 60 秒上限で失敗することあり（その場合は Pro で `maxDuration` を延長）。
+  - `mode: "deep"` … `gemini-2.5-pro`。高精度だが Hobby プランの 60 秒上限で失敗することあり（その場合は Pro で `vercel.json` の `maxDuration` を延長）。
 
-> ローカル確認: `npx vercel dev`（`GEMINI_API_KEY` を `.env` か環境変数で渡す）。
+> ローカル確認:
+> - 依存なしの簡易サーバ … `GEMINI_API_KEY=... python app.py` → http://localhost:8000
+> - 本番同等 … `npx vercel dev`（`GEMINI_API_KEY` を `.env` か環境変数で渡す）
 
 ## テスト
 

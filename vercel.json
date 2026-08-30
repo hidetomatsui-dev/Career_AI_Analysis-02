@@ -1,9 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
-    "api/integrate.py": {
+    "app.py": {
       "maxDuration": 60,
-      "includeFiles": "career_integrator/**"
+      "excludeFiles": "{tests/**,samples/**,.venv/**,out/**,**/__pycache__/**}"
     }
   }
 }
