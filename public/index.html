@@ -62,6 +62,8 @@
   .outbar { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
   footer { margin-top: 40px; color: var(--muted); font-size: .8rem; }
   code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+  label .src-link { font-weight: 400; font-size: .82rem; margin-left: 6px; white-space: nowrap; }
+  label .src-link a { color: var(--accent); }
 </style>
 </head>
 <body>
@@ -70,7 +72,7 @@
   <p class="sub">2 つの自己理解レポートを貼り付けると、統合した「キャリア統合分析レポート」を生成します。</p>
 
   <div class="field">
-    <label for="interest">① 職業興味×価値観レポート <span class="hint">（提出用ワークシート全文）</span></label>
+    <label for="interest">① 職業興味×価値観レポート <span class="hint">（提出用ワークシート全文）</span><span class="src-link"><a href="https://card-06.vercel.app/" target="_blank" rel="noopener noreferrer">レポートを作成する ↗</a></span></label>
     <textarea id="interest" placeholder="════ 職業興味×価値観ワークショップ 提出用ワークシート ════ …"></textarea>
   </div>
 
