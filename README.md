@@ -78,7 +78,7 @@ python integrate_report.py -i samples/interest_values_report.txt -t samples/tenm
 ## Web でデプロイ（Vercel）
 
 Vercel の **Python ランタイム**（WSGI エントリポイント）で動きます。`app.py` の `app` が全リクエストを処理し、
-`/` と `/samples/*` は `public/` の静的ファイル、`POST /api/integrate` が統合 API です。
+`/` は `public/` の静的ファイル、`POST /api/integrate` が統合 API です。
 エントリポイントは `pyproject.toml` の `[tool.vercel] entrypoint = "app:app"` で明示しています。
 
 ### 1. プロジェクトを接続
@@ -102,7 +102,7 @@ Vercel の Project → Settings → Environment Variables に追加（Production
 
 ### 3. 動作
 
-- `/` … 入力フォーム（`public/index.html`）。「サンプルを挿入」で `public/samples/` の例が入ります。
+- `/` … 入力フォーム（`public/index.html`）。2 レポートを貼り付けて生成する。
 - `POST /api/integrate` … `{ interest, tenmei, name?, mode?, model? }` を受け取り `{ report }` を返す。
   - `mode: "fast"`（既定）… `gemini-2.5-flash`。目安 15〜35 秒。
   - `mode: "deep"` … `gemini-2.5-pro`。高精度だが Hobby プランの 60 秒上限で失敗することあり（その場合は Pro で `vercel.json` の `maxDuration` を延長）。

@@ -84,7 +84,7 @@
   <div class="row">
     <div class="field">
       <label for="name">宛名 <span class="hint">（任意・空欄なら自動）</span></label>
-      <input type="text" id="name" placeholder="例: ひでと" />
+      <input type="text" id="name" placeholder="例: 山田太郎" />
     </div>
     <div class="field">
       <label for="mode">生成モード</label>
@@ -97,7 +97,6 @@
 
   <div class="controls">
     <button id="run">統合レポートを生成</button>
-    <button id="sample" class="ghost" type="button">サンプルを挿入</button>
     <button id="clear" class="ghost" type="button">クリア</button>
   </div>
   <div class="status" id="status"></div>
@@ -147,21 +146,6 @@ function renderMarkdown(md) {
   return html;
 }
 
-async function loadSample() {
-  setStatus("サンプルを読み込み中…");
-  try {
-    const [a, b] = await Promise.all([
-      fetch("/samples/interest_values_report.txt").then(r => r.text()),
-      fetch("/samples/tenmei_report.txt").then(r => r.text()),
-    ]);
-    $("interest").value = a.trim();
-    $("tenmei").value = b.trim();
-    setStatus("サンプルを挿入しました。");
-  } catch (e) {
-    setStatus("サンプルの読み込みに失敗しました。", true);
-  }
-}
-
 function setStatus(msg, isErr) {
   const el = $("status");
   el.textContent = msg;
@@ -204,7 +188,6 @@ async function run() {
 }
 
 $("run").addEventListener("click", run);
-$("sample").addEventListener("click", loadSample);
 $("clear").addEventListener("click", () => {
   $("interest").value = ""; $("tenmei").value = ""; $("name").value = "";
   $("out").classList.remove("show"); $("outbar").style.display = "none"; setStatus("");

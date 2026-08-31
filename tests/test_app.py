@@ -36,11 +36,10 @@ class StaticRoutingTest(unittest.TestCase):
         self.assertIn("text/html", headers["Content-Type"])
         self.assertIn(b"<title>", body)
 
-    def test_sample_txt(self):
-        status, headers, body = wsgi_call("GET", "/samples/tenmei_report.txt")
-        self.assertTrue(status.startswith("200"))
-        self.assertIn("text/plain", headers["Content-Type"])
-        self.assertIn("天命レポート".encode("utf-8"), body)
+    def test_samples_removed(self):
+        # サンプル挿入機能を廃止したので静的サンプルは配信しない
+        status, _, _ = wsgi_call("GET", "/samples/tenmei_report.txt")
+        self.assertTrue(status.startswith("404"))
 
     def test_unknown_path_404(self):
         status, _, _ = wsgi_call("GET", "/does-not-exist")
