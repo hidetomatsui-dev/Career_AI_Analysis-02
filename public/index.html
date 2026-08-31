@@ -64,6 +64,7 @@
   code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
   label .src-link { font-weight: 400; font-size: .82rem; margin-left: 6px; white-space: nowrap; }
   label .src-link a { color: var(--accent); }
+  .mode-note { margin: 6px 0 0; color: var(--muted); font-size: .82rem; line-height: 1.5; }
 </style>
 </head>
 <body>
@@ -92,6 +93,7 @@
         <option value="fast">はやい（Gemini 2.5 Flash・目安 15〜35 秒）</option>
         <option value="deep">じっくり（Gemini 2.5 Pro・高精度／60 秒超で失敗することあり）</option>
       </select>
+      <p class="mode-note">「じっくり」を選ぶと、制限時間60秒の間にレポートを生成できない場合があります。「はやい」をおすすめします。</p>
     </div>
   </div>
 
